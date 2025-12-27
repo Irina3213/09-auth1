@@ -2,10 +2,10 @@
 
 import css from "./NoteForm.module.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-// ✅ 1. Перевірте назви у clientApi. Ймовірно, там CreateNoteData або схоже
+
 import { createNote, type CreateNoteParams } from "@/lib/api/clientApi";
 import { useRouter } from "next/navigation";
-// ✅ 2. ДОДАЙТЕ ЦЕЙ ІМПОРТ (його не було, тому виникала помилка на useNoteDraftStore)
+
 import { useNoteDraftStore } from "@/lib/store/noteDraftStore";
 
 export default function NoteForm() {
@@ -18,7 +18,6 @@ export default function NoteForm() {
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
-    // ✅ 3. Виправляємо помилку: draft може бути undefined, тому використовуємо spread порожнього об'єкта
     setDraft({
       ...(draft || {}),
       [event.target.name]: event.target.value,
