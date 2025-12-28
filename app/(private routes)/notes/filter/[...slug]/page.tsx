@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function App({ params }: Props) {
+export default async function FilteredNotesPage({ params }: Props) {
   const { slug } = await params;
   const tag = slug[0] === "All" ? undefined : slug[0];
 
