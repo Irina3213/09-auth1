@@ -1,3 +1,3 @@
-const Default = () => null;
-
-export default Default;
+export default function Default() {
+  return null;
+}

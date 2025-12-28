@@ -1,17 +1,26 @@
-import {
-  User,
-  RegisterCredentials,
-  LoginCredentials,
-  UpdateUserDto,
-} from "@/types/user";
+import { instance } from "./api";
+import { User, RegisterCredentials, LoginCredentials } from "@/types/user";
 import { Note } from "@/types/note";
-import axios from "axios";
 
-const instance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL + "/api",
-  withCredentials: true,
-});
-// --- AUTH ---
+export interface CreateNoteParams {
+  title: string;
+  content: string;
+  tag: "Todo" | "Work" | "Personal" | "Meeting" | "Shopping";
+}
+
+export interface UpdateUserDto {
+  username?: string;
+  email?: string;
+  avatar?: string;
+}
+
+export interface NoteResponse {
+  notes: Note[];
+  total: number;
+  pages: number;
+  page: number;
+}
+
 export const register = async (data: RegisterCredentials): Promise<User> => {
   const res = await instance.post("/auth/register", data);
   return res.data;
@@ -31,35 +40,16 @@ export const checkSession = async (): Promise<User | null> => {
   return res.data || null;
 };
 
-// --- USER ---
 export const updateMe = async (data: UpdateUserDto): Promise<User> => {
   const res = await instance.patch("/users/me", data);
   return res.data;
 };
-
-// --- NOTES TYPES ---
-export interface CreateNoteParams {
-  title: string;
-  content: string;
-  tag: "Todo" | "Work" | "Personal" | "Meeting" | "Shopping";
-}
-
-// Структура відповіді від сервера для списку нотаток
-export interface NoteResponse {
-  notes: Note[];
-  total: number;
-  pages: number;
-  page: number;
-}
-
-// --- NOTES METHODS ---
 
 export const createNote = async (data: CreateNoteParams): Promise<Note> => {
   const res = await instance.post("/notes", data);
   return res.data;
 };
 
-// Тільки ОДНЕ оголошення fetchNotes
 export const fetchNotes = async (
   params: { page?: number; search?: string; tag?: string } = {}
 ): Promise<NoteResponse> => {
@@ -80,6 +70,7 @@ export const updateNote = async (
   return res.data;
 };
 
-export const deleteNote = async (id: string): Promise<void> => {
-  await instance.delete(`/notes/${id}`);
+export const deleteNote = async (id: string): Promise<Note> => {
+  const res = await instance.delete(`/notes/${id}`);
+  return res.data;
 };
