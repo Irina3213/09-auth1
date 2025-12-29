@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { cookies } from "next/headers";
+import { checkSession } from "@/lib/api/serverApi";
 
-const privateRoutes = ["/notes", "/profile", "/settings"];
-const authRoutes = ["/login", "/register"];
+const privateRoutes = ["/profile", "/notes"];
+const authRoutes = ["/sign-in", "/sign-up"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -22,19 +23,9 @@ export async function middleware(request: NextRequest) {
 
   if (!accessToken && refreshToken) {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/session`,
-        {
-          headers: { Cookie: `refreshToken=${refreshToken}` },
-        }
-      );
-
-      if (response.ok) {
+      const user = await checkSession();
+      if (user) {
         isAuthenticated = true;
-        const setCookie = response.headers.get("set-cookie");
-        if (setCookie) {
-          nextResponse.headers.set("set-cookie", setCookie);
-        }
       }
     } catch (error) {
       console.error("Session refresh failed:", error);
@@ -42,16 +33,16 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isPrivateRoute && !isAuthenticated) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/sign-in", request.url));
   }
 
   if (isAuthRoute && isAuthenticated) {
-    return NextResponse.redirect(new URL("/notes", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return nextResponse;
 }
 
 export const config = {
-  matcher: ["/notes/:path*", "/profile/:path*", "/login", "/register"],
+  matcher: ["/notes/:path*", "/profile/:path*", "/sign-in", "/sign-up"],
 };

@@ -5,15 +5,16 @@ export interface User {
 }
 
 export interface RegisterCredentials {
+  username: string;
   email: string;
   password: string;
-  username: string;
 }
 
 export interface LoginCredentials {
   email: string;
   password: string;
 }
+
 export interface UpdateUserDto {
   username?: string;
   email?: string;
