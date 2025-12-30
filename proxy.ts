@@ -19,48 +19,43 @@ export async function proxy(request: NextRequest) {
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
 
   let isAuthenticated = !!accessToken;
+  let newAccess: string | undefined;
+  let newRefresh: string | undefined;
 
-  const res = NextResponse.next();
-
-  // 1. Оновлення сесії
+  // 1. Логіка оновлення сесії
   if (!accessToken && refreshToken) {
     try {
       const user = await checkSession();
-
       if (user) {
         isAuthenticated = true;
 
         const updatedCookies = await cookies();
-        const newAccess = updatedCookies.get("accessToken")?.value;
-        const newRefresh = updatedCookies.get("refreshToken")?.value;
-
-        if (newAccess) res.cookies.set("accessToken", newAccess);
-        if (newRefresh) res.cookies.set("refreshToken", newRefresh);
+        newAccess = updatedCookies.get("accessToken")?.value;
+        newRefresh = updatedCookies.get("refreshToken")?.value;
       }
     } catch (error) {
       console.error("Session refresh failed", error);
     }
   }
 
-  // 2. Логіка перенаправлень
+  let response: NextResponse;
+
   if (isPrivateRoute && !isAuthenticated) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
+    response = NextResponse.redirect(new URL("/sign-in", request.url));
+  } else if (isAuthRoute && isAuthenticated) {
+    response = NextResponse.redirect(new URL("/", request.url));
+  } else {
+    response = NextResponse.next();
   }
 
-  if (isAuthRoute && isAuthenticated) {
-    const redirectRes = NextResponse.redirect(new URL("/", request.url));
-
-    const updatedCookies = await cookies();
-    const newAccess = updatedCookies.get("accessToken")?.value;
-    const newRefresh = updatedCookies.get("refreshToken")?.value;
-
-    if (newAccess) redirectRes.cookies.set("accessToken", newAccess);
-    if (newRefresh) redirectRes.cookies.set("refreshToken", newRefresh);
-
-    return redirectRes;
+  if (newAccess) {
+    response.cookies.set("accessToken", newAccess);
+  }
+  if (newRefresh) {
+    response.cookies.set("refreshToken", newRefresh);
   }
 
-  return res;
+  return response;
 }
 
 export const config = {
