@@ -8,8 +8,9 @@ const authRoutes = ["/sign-in", "/sign-up"];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const cookieStore = await cookies();
 
+  // 1. Отримуємо початкові токени
+  const cookieStore = await cookies();
   const accessToken = cookieStore.get("accessToken")?.value;
   const refreshToken = cookieStore.get("refreshToken")?.value;
 
@@ -19,22 +20,20 @@ export async function proxy(request: NextRequest) {
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
 
   let isAuthenticated = !!accessToken;
-  let newAccess: string | undefined;
-  let newRefresh: string | undefined;
 
-  // 1. Логіка оновлення сесії
+  // 2. Спроба оновлення сесії
   if (!accessToken && refreshToken) {
     try {
       const user = await checkSession();
+
       if (user) {
         isAuthenticated = true;
-
-        const updatedCookies = await cookies();
-        newAccess = updatedCookies.get("accessToken")?.value;
-        newRefresh = updatedCookies.get("refreshToken")?.value;
+      } else {
+        isAuthenticated = false;
       }
     } catch (error) {
-      console.error("Session refresh failed", error);
+      console.error("Session refresh failed:", error);
+      isAuthenticated = false;
     }
   }
 
@@ -48,11 +47,17 @@ export async function proxy(request: NextRequest) {
     response = NextResponse.next();
   }
 
-  if (newAccess) {
-    response.cookies.set("accessToken", newAccess);
-  }
-  if (newRefresh) {
-    response.cookies.set("refreshToken", newRefresh);
+  if (!accessToken && isAuthenticated) {
+    const updatedCookieStore = await cookies();
+    const newAccess = updatedCookieStore.get("accessToken")?.value;
+    const newRefresh = updatedCookieStore.get("refreshToken")?.value;
+
+    if (newAccess) {
+      response.cookies.set("accessToken", newAccess);
+    }
+    if (newRefresh) {
+      response.cookies.set("refreshToken", newRefresh);
+    }
   }
 
   return response;
