@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { proxy } from "./middleware/middleware"; // Імпорт з папки
+import { proxyLogic } from "./appProxy"; // Імпортуємо з нового імені
 
 export async function middleware(request: NextRequest) {
-  return await proxy(request);
+  return await proxyLogic(request);
 }
 
 export const config = {
