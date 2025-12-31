@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { checkSession } from "../lib/api/serverApi"; // перевірте шлях до lib
+import { checkSession } from "../lib/api/serverApi"; // Перевірте, чи шлях вірний
 
-const BACKEND_URL = "https://auth-backend-production-c662.up.railway.app";
 const privateRoutes = ["/profile", "/notes"];
 const authRoutes = ["/sign-in", "/sign-up"];
+const BACKEND_URL = "https://auth-backend-production-c662.up.railway.app";
 
+// Експортуємо як proxy, щоб задовольнити ментора
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. ВИПРАВЛЕННЯ 404: Проксіюємо запити /auth та /api на бекенд
+  // 1. Rewrite для запобігання 404
   if (pathname.startsWith("/auth") || pathname.startsWith("/api")) {
     const targetUrl = new URL(pathname + request.nextUrl.search, BACKEND_URL);
     return NextResponse.rewrite(targetUrl);
@@ -17,6 +18,7 @@ export async function proxy(request: NextRequest) {
 
   const accessToken = request.cookies.get("accessToken")?.value;
   const refreshToken = request.cookies.get("refreshToken")?.value;
+
   const isPrivateRoute = privateRoutes.some((route) =>
     pathname.startsWith(route)
   );
@@ -25,7 +27,6 @@ export async function proxy(request: NextRequest) {
   let isAuthenticated = !!accessToken;
   let sessionResponse: Response | null = null;
 
-  // 2. ПЕРЕВІРКА СЕСІЇ (Вимога ментора)
   if (!accessToken && refreshToken) {
     try {
       const res = await checkSession();
@@ -38,7 +39,6 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // 3. РЕДИРЕКТИ
   let response: NextResponse;
   if (isPrivateRoute && !isAuthenticated) {
     response = NextResponse.redirect(new URL("/sign-in", request.url));
@@ -48,7 +48,6 @@ export async function proxy(request: NextRequest) {
     response = NextResponse.next();
   }
 
-  // 4. КОПІЮВАННЯ SET-COOKIE (Вимога ментора)
   if (sessionResponse) {
     const setCookie = sessionResponse.headers.get("set-cookie");
     if (setCookie) {
@@ -58,3 +57,17 @@ export async function proxy(request: NextRequest) {
 
   return response;
 }
+
+// Цей рядок обов'язковий для Next.js, він каже: "використовуй функцію proxy як головну"
+export default proxy;
+
+export const config = {
+  matcher: [
+    "/profile/:path*",
+    "/notes/:path*",
+    "/sign-in",
+    "/sign-up",
+    "/auth/:path*",
+    "/api/:path*",
+  ],
+};

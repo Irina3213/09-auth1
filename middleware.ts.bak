@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { proxy } from "./middleware/proxy"; // Імпорт з папки
+import { proxy } from "./middleware/middleware"; // Імпорт з папки
 
 export async function middleware(request: NextRequest) {
   return await proxy(request);

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { proxy } from "./proxy";
+import { proxy } from "./middleware";
 
 export async function middleware(request: NextRequest) {
   return await proxy(request);
