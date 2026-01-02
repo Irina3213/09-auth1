@@ -1,45 +1,31 @@
 "use client";
 
-import { useEffect, useState, ReactNode } from "react";
+import { checkSession, getMe } from "@/lib/api/clientApi";
 import { useAuthStore } from "@/lib/store/authStore";
-import { checkSession } from "@/lib/api/clientApi";
-import { useRouter, usePathname } from "next/navigation";
+import { useEffect } from "react";
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const { setUser, clearIsAuthenticated } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
-  const pathname = usePathname();
+type Props = {
+  children: React.ReactNode;
+};
+
+export const AuthProvider = ({ children }: Props) => {
+  const setUser = useAuthStore((state) => state.setUser);
+  const clearIsAuthenticated = useAuthStore(
+    (state) => state.clearIsAuthenticated
+  );
 
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const user = await checkSession();
-        if (user) {
-          setUser(user);
-        } else {
-          clearIsAuthenticated();
-          if (
-            pathname.startsWith("/profile") ||
-            pathname.startsWith("/notes")
-          ) {
-            router.push("/sign-in");
-          }
-        }
-      } catch {
-        // Ми прибрали (error), щоб ESLint не сварився на невикористану змінну
+    const fetchUser = async () => {
+      const isAuthenticated = await checkSession();
+      if (isAuthenticated) {
+        const user = await getMe();
+        if (user) setUser(user);
+      } else {
         clearIsAuthenticated();
-      } finally {
-        setIsLoading(false);
       }
     };
+    fetchUser();
+  }, [setUser, clearIsAuthenticated]);
 
-    initAuth();
-  }, [setUser, clearIsAuthenticated, pathname, router]);
-
-  if (isLoading) {
-    return <div className="loader">Loading...</div>;
-  }
-
-  return <>{children}</>;
+  return children;
 };

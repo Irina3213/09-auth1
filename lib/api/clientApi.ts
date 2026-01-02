@@ -23,6 +23,13 @@ export interface NoteResponse {
 
 // Реєстрація
 export const register = async (data: RegisterCredentials): Promise<User> => {
+  // const payload = {
+  //   ...data,
+  //   username: data.username || data.email,
+  // };
+  // const res = await instance.post("/auth/register", payload);
+  // return res.data;
+
   const res = await instance.post("/auth/register", data);
   return res.data;
 };
@@ -38,14 +45,22 @@ export const logout = async (): Promise<void> => {
   await instance.post("/auth/logout");
 };
 
-export const checkSession = async (): Promise<User | null> => {
-  try {
-    const res = await instance.get("/auth/session");
-    return res.data || null;
-  } catch {
-    return null;
-  }
+type CheckSessionRequest = {
+  success: boolean;
 };
+
+export const checkSession = async () => {
+  const res = await instance.get<CheckSessionRequest>("/auth/session");
+  return res.data.success;
+};
+// export const checkSession = async (): Promise<User | null> => {
+//   try {
+//     const res = await instance.get("/auth/session");
+//     return res.data || null;
+//   } catch {
+//     return null;
+//   }
+// };
 
 // Профіль
 export const updateMe = async (data: UpdateUserDto): Promise<User> => {
@@ -82,4 +97,8 @@ export const updateNote = async (
 export const deleteNote = async (id: string): Promise<Note> => {
   const res = await instance.delete(`/notes/${id}`);
   return res.data;
+};
+export const getMe = async () => {
+  const { data } = await instance.get<User>("/users/me");
+  return data;
 };
